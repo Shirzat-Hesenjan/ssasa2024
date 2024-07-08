@@ -25,6 +25,8 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Clone the repo
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # Runs a single command using the runners shell
       - name: Run echo print
