@@ -1,5 +1,5 @@
-CC=gcc
-CFLAGS=-Wall -std=c99
+CC=clang
+CFLAGS=-Wall -Wpedantic -Wextra
 
 APP=sha3
 # REF=sha3ref (TODO)
