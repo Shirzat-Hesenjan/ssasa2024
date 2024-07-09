@@ -33,10 +33,48 @@ Given a bitrate r = 1088, the message is padded so that its length is a multiple
 
 function `f` implements the 5 steps: $\theta$, $\rho$, $\pi$, $\chi$ and $\iota$.
 
+Theta:
+
+    This step involves XORing each bit of the state with a parity bit calculated from the state itself.
+
+Rho:
+
+    This step rotates the bits within the state by a specific offset.
+
+Pi:
+
+    This step permutes the bits within the state, effectively rearranging them.
+
+Chi:
+
+    This step performs a non-linear transformation on the state.
+
+Iota:
+
+    This step introduces a round-dependent constant into the state to ensure asymmetry.
+
 ### Sponge Construction
 
 - absorbing phase
 - squeezing phase
+
+#### Absorbing phase
+
+Determine the Rate in Bytes:
+
+    The bitrate r is typically defined in bits. Since we need to process data in bytes, we convert it to bytes by dividing by 8.
+    For KECCAK_BITRATE = 1088, the rate in bytes is 1088 / 8 = 136 bytes.
+
+Process Full Blocks of Data:
+
+    The function processes the input data in chunks of rate_bytes (136 bytes).
+    For each full block of rate_bytes, XOR the input data with the corresponding part of the state.
+    After XOR-ing, apply the Keccak permutation to mix the state.
+
+Handle the Remaining Data:
+
+    If the input data length is not a multiple of rate_bytes, there will be leftover data less than rate_bytes.
+    Copy the remaining data into the dataQueue to be handled later during padding.
 
 ### String everything together
 

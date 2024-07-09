@@ -25,6 +25,22 @@ void keccak_initialize(keccak_context_t* context) {
 void keccak_absorb(keccak_context_t* context, const uint8_t* data,
                    size_t length) {
   // Implement the absorb phase
+  size_t rate_bytes = KECCAK_BITRATE / 8; // 136 bytes for a bitrate of 1088 bits
+  size_t i;
+
+  // Process full blocks
+  while (length >= rate_bytes) {
+    for (i = 0; i < rate_bytes; i++) {
+        context->state[i] ^= ((uint64_t*)data)[i];
+    }
+    keccak_permutation(context->state);
+    data += rate_bytes;
+    length -= rate_bytes;
+  }
+
+  // Handle remaining of the data
+  memcpy(context->dataQueue, data, length);
+  context->dataQueueSize = length;
 }
 
 void keccak_squeeze(keccak_context_t* context, uint8_t* hash,
