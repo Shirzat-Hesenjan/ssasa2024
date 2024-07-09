@@ -100,6 +100,8 @@ The main programme should read the input, applying padding, do the Keccak permut
 Citing an existing implementation on [sha3-256](https://github.com/euugenechou/sha3-256) for reference, for test comparisons
 Note that the reference implementation contains full NIST test vectors, it should suffice to test against these vectors to assess the correctness of my implementation.
 
+For randomly generated data for hashes and test against these NIST vectors, I use python and hook the `Makefile` to do tests after successful compilation. Upon all success there should be "OK" printed in the terminal.
+
 ### Skeleton Code in progress (Development Note)
 
 - `sha3.h` <- constants, data structure
