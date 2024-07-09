@@ -137,6 +137,28 @@ void keccak_padding(keccak_context_t* context) {
 void keccak_squeeze(keccak_context_t* context, uint8_t* hash,
                     size_t hashLength) {
   // Implement the squeeze phase
+  size_t rate_bytes =
+      KECCAK_BITRATE / 8;  // 136 bytes for a bitrate of 1088 bits
+  size_t outputLength = 0;
+
+  while (outputLength < hashLength) {
+    if (context->dataQueueSize == rate_bytes) {
+      keccak_permutation(context->state);
+      context->dataQueueSize = 0;
+    }
+
+    size_t remainingBytes = hashLength - outputLength;
+    size_t bytesToOutput =
+        (remainingBytes < (rate_bytes - context->dataQueueSize))
+            ? remainingBytes
+            : (rate_bytes - context->dataQueueSize);
+
+    memcpy(hash + outputLength,
+           (uint8_t*)context->state + context->dataQueueSize, bytesToOutput);
+
+    context->dataQueueSize += bytesToOutput;
+    outputLength += bytesToOutput;
+  }
 }
 
 unsigned char* keccak_hash(unsigned char* data, size_t length) {

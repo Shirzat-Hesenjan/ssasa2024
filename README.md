@@ -76,6 +76,21 @@ Handle the Remaining Data:
     If the input data length is not a multiple of rate_bytes, there will be leftover data less than rate_bytes.
     Copy the remaining data into the dataQueue to be handled later during padding.
 
+#### Squeeze phase
+
+Initialize Variables:
+
+    rate_bytes is calculated as KECCAK_BITRATE / 8.
+    outputLength keeps track of how many bytes have been copied to the hash buffer.
+
+Squeeze Process:
+
+    The function continues to squeeze data from the state until the required hashLength is reached.
+    If dataQueueSize equals rate_bytes, the state needs to be permuted to produce more output.
+    Copy the minimum of the remaining bytes needed and rate_bytes from the state to the hash buffer.
+    Update outputLength and dataQueueSize accordingly.
+
+
 ### String everything together
 
 The main programme should read the input, applying padding, do the Keccak permutation to produce the final hash.
