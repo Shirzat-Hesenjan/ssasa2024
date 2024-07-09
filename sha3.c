@@ -11,15 +11,14 @@ static const uint64_t keccak_round_constants[KECCAK_ROUND_COUNT] = {
     // the permutation,
     // ensuring each round is different and thus contributing to the security of
     // the algorithm.
-
-    0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
-    0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
-    0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL,
-    0x0000000000000088ULL, 0x0000000080008009ULL, 0x000000008000000aULL,
-    0x000000008000808bULL, 0x800000000000008bULL, 0x8000000000008089ULL,
-    0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL,
-    0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL,
-    0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL};
+    0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
+    0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
+    0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
+    0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+    0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
+    0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+    0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
+    0x8000000000008080, 0x0000000080000001, 0x8000000080008008};
 
 void keccak_initialize(keccak_context_t* context) {
   memset(context, 0, sizeof(keccak_context_t));
@@ -31,15 +30,17 @@ uint64_t ROTL64(uint64_t x, uint64_t y) {
 
 void keccak_theta(uint64_t* state) {
   uint64_t C[5], D[5];
-  for (int x = 0; x < 5; x++) {
+  int x, y;
+
+  for (x = 0; x < 5; x++) {
     C[x] =
         state[x] ^ state[x + 5] ^ state[x + 10] ^ state[x + 15] ^ state[x + 20];
   }
-  for (int x = 0; x < 5; x++) {
+  for (x = 0; x < 5; x++) {
     D[x] = C[(x + 4) % 5] ^ ROTL64(C[(x + 1) % 5], 1);
   }
-  for (int x = 0; x < 5; x++) {
-    for (int y = 0; y < 5; y++) {
+  for (x = 0; x < 5; x++) {
+    for (y = 0; y < 5; y++) {
       state[x + 5 * y] ^= D[x];
     }
   }
@@ -49,16 +50,18 @@ void keccak_rho(uint64_t* state) {
   static const int rho_offsets[25] = {0,  1, 62, 28, 27, 36, 44, 6,  55,
                                       20, 3, 10, 43, 25, 39, 41, 45, 15,
                                       21, 8, 18, 2,  61, 56, 14};
-  for (int i = 0; i < 25; i++) {
+  int i;
+  for (i = 0; i < 25; i++) {
     state[i] = ROTL64(state[i], rho_offsets[i]);
   }
 }
 
 void keccak_pi(uint64_t* state) {
   uint64_t temp[25];
+  int x, y;
   memcpy(temp, state, sizeof(temp));
-  for (int x = 0; x < 5; x++) {
-    for (int y = 0; y < 5; y++) {
+  for (x = 0; x < 5; x++) {
+    for (y = 0; y < 5; y++) {
       state[y + 5 * ((2 * x + 3 * y) % 5)] = temp[x + 5 * y];
     }
   }
@@ -66,11 +69,12 @@ void keccak_pi(uint64_t* state) {
 
 void keccak_chi(uint64_t* state) {
   uint64_t temp[5];
-  for (int y = 0; y < 5; y++) {
-    for (int x = 0; x < 5; x++) {
+  int y, x;
+  for (y = 0; y < 5; y++) {
+    for (x = 0; x < 5; x++) {
       temp[x] = state[x + 5 * y];
     }
-    for (int x = 0; x < 5; x++) {
+    for (x = 0; x < 5; x++) {
       state[x + 5 * y] ^= (~temp[(x + 1) % 5]) & temp[(x + 2) % 5];
     }
   }
@@ -92,53 +96,53 @@ void keccak_permutation(uint64_t* state) {
   }
 }
 
+// Keccak padding
+void keccak_padding(keccak_context_t* context) {
+  size_t rate_bytes = KECCAK_BITRATE / 8;
+  context->dataQueue[context->dataQueueSize] =
+      0x06;  // SHA3-256 (not Keccak256)
+  memset(context->dataQueue + context->dataQueueSize + 1, 0,
+         rate_bytes - context->dataQueueSize - 2);
+  context->dataQueue[rate_bytes - 1] = 0x80;
+  for (size_t i = 0; i < rate_bytes / 8; i++) {
+    context->state[i] ^= ((uint64_t*)context->dataQueue)[i];
+  }
+  keccak_permutation(context->state);
+  context->dataQueueSize = 0;
+}
+
+// Keccak absorb
 void keccak_absorb(keccak_context_t* context, const uint8_t* data,
                    size_t length) {
-  // Implement the absorb phase
-  size_t rate_bytes =
-      KECCAK_BITRATE / 8;  // 136 bytes for a bitrate of 1088 bits
-  size_t i;
+  size_t rate_bytes = KECCAK_BITRATE / 8;
+  size_t offset = 0;
 
-  // Process full blocks
-  while (length >= rate_bytes) {
-    for (i = 0; i < rate_bytes; i++) {
-      context->state[i] ^= ((uint64_t*)data)[i];
+  while (length > 0) {
+    size_t blockSize = rate_bytes - context->dataQueueSize;
+    if (blockSize > length) {
+      blockSize = length;
     }
-    keccak_permutation(context->state);
-    data += rate_bytes;
-    length -= rate_bytes;
-  }
 
-  // Handle remaining of the data
-  memcpy(context->dataQueue, data, length);
-  context->dataQueueSize = length;
+    memcpy(context->dataQueue + context->dataQueueSize, data + offset,
+           blockSize);
+    context->dataQueueSize += blockSize;
+    offset += blockSize;
+    length -= blockSize;
+
+    if (context->dataQueueSize == rate_bytes) {
+      for (size_t i = 0; i < rate_bytes / 8; i++) {
+        context->state[i] ^= ((uint64_t*)context->dataQueue)[i];
+      }
+      keccak_permutation(context->state);
+      context->dataQueueSize = 0;
+    }
+  }
 }
 
-void keccak_padding(keccak_context_t* context) {
-  // Implement the padding function
-  // Calculate the position where the padding should start
-  size_t padding_start = context->dataQueueSize;
-
-  // Add the first padding bit with 1
-  context->dataQueue[padding_start++] = 0x01;
-
-  // Fill the rest with zeroes
-  while (padding_start < (KECCAK_BITRATE / 8)) {
-    context->dataQueue[padding_start++] = 0x00;
-  }
-
-  // Replace the last bit with 1
-  context->dataQueue[(KECCAK_BITRATE / 8) - 1] |= 0x80;
-
-  // Update the size of the data queue to be exactly the bitrate
-  context->dataQueueSize = KECCAK_BITRATE / 8;
-}
-
+// Keccak squeeze
 void keccak_squeeze(keccak_context_t* context, uint8_t* hash,
                     size_t hashLength) {
-  // Implement the squeeze phase
-  size_t rate_bytes =
-      KECCAK_BITRATE / 8;  // 136 bytes for a bitrate of 1088 bits
+  size_t rate_bytes = KECCAK_BITRATE / 8;
   size_t outputLength = 0;
 
   while (outputLength < hashLength) {
@@ -153,26 +157,23 @@ void keccak_squeeze(keccak_context_t* context, uint8_t* hash,
             ? remainingBytes
             : (rate_bytes - context->dataQueueSize);
 
-    memcpy(hash + outputLength,
-           (uint8_t*)context->state + context->dataQueueSize, bytesToOutput);
-
+    memcpy(hash + outputLength, context->state + context->dataQueueSize,
+           bytesToOutput);
     context->dataQueueSize += bytesToOutput;
     outputLength += bytesToOutput;
   }
 }
 
+// Keccak hash function
 unsigned char* keccak_hash(unsigned char* data, size_t length) {
   keccak_context_t context;
-  keccak_initialize(&context);
-
+  uint8_t* hash =
+      (uint8_t*)malloc(32);  // SHA-3-256 produces a 256-bit (32-byte) hash
+  memset(hash, 0, 32);       // if not zeroed, the result might contain garbage
+  memset(&context, 0, sizeof(keccak_context_t));
   keccak_absorb(&context, data, length);
   keccak_padding(&context);
+  keccak_squeeze(&context, hash, 32);
 
-  unsigned char* hash = (unsigned char*)malloc(SHA3_256_DIGEST_SIZE);
-  if (hash == NULL) {
-    return NULL;  // Handle memory allocation failure
-  }
-
-  keccak_squeeze(&context, hash, SHA3_256_DIGEST_SIZE);
   return hash;
 }

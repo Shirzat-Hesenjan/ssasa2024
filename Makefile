@@ -1,20 +1,22 @@
-CC=clang
-CFLAGS=-Wall -Wpedantic -Wextra
+CC=gcc
+CFLAGS=-std=c2x -Wall -Wpedantic -Wextra -fPIC
 
-APP=sha3
-# REF=sha3ref (TODO)
-SOURCES=$(wildcard *.c)
-OBJECTS=$(SOURCES:%.c=%.o)
+.PHONY: all
 
-.PHONY: all clean
+all: main libsha3.so test
 
-all: $(APP)
+main: sha3.o test.c
+	$(CC) $(CFLAGS) -o main test.c sha3.o
 
-$(APP): $(OBJECTS)
-	$(CC) -o $@ $^
+sha3.o: sha3.c sha3.h
+	$(CC) $(CFLAGS) -o sha3.o -c sha3.c
 
-%.o : %.c
-	$(CC) $(CFLAGS) -c $<
+libsha3.so: sha3.o
+	$(CC) $(CFLAGS) -o libsha3.so -shared sha3.o
+
+test: main libsha3.so
+	./main && ./run_test.py
 
 clean:
-	rm -f $(APP) $(OBJECTS)
+	rm -f *.o *.so main
+	rm -rf output
