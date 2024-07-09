@@ -16,7 +16,7 @@ def bytes_to_hex_string(data: bytes):
 
 
 def sha3(data: bytes, length: int):
-    lib = CDLL("libsha3.so")
+    lib = CDLL("./libsha3.so")
     lib.keccak_hash.restype = POINTER(c_ubyte)
     # lib.keccak_hash.argtypes = (POINTER(c_ubyte), c_size_t)
     # d = create_string_buffer(length)
