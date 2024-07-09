@@ -1,4 +1,5 @@
 #include "sha3.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,8 +7,10 @@
 
 static const uint64_t keccak_round_constants[KECCAK_ROUND_COUNT] = {
     // Initialize with appropriate constants
-    // These constants are essential in the Iota step to introduce asymmetry to the permutation,
-    // ensuring each round is different and thus contributing to the security of the algorithm.
+    // These constants are essential in the Iota step to introduce asymmetry to
+    // the permutation,
+    // ensuring each round is different and thus contributing to the security of
+    // the algorithm.
 
     0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
     0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
@@ -22,41 +25,8 @@ void keccak_initialize(keccak_context_t* context) {
   memset(context, 0, sizeof(keccak_context_t));
 }
 
-void keccak_absorb(keccak_context_t* context, const uint8_t* data,
-                   size_t length) {
-  // Implement the absorb phase
-  size_t rate_bytes = KECCAK_BITRATE / 8; // 136 bytes for a bitrate of 1088 bits
-  size_t i;
-
-  // Process full blocks
-  while (length >= rate_bytes) {
-    for (i = 0; i < rate_bytes; i++) {
-        context->state[i] ^= ((uint64_t*)data)[i];
-    }
-    keccak_permutation(context->state);
-    data += rate_bytes;
-    length -= rate_bytes;
-  }
-
-  // Handle remaining of the data
-  memcpy(context->dataQueue, data, length);
-  context->dataQueueSize = length;
-}
-
-void keccak_squeeze(keccak_context_t* context, uint8_t* hash,
-                    size_t hashLength) {
-  // Implement the squeeze phase
-}
-
-void keccak_permutation(uint64_t* state) {
-  // Implement the permutation function f with the 5 steps (theta, rho, pi, chi, iota)
-  for (int round = 0; round < KECCAK_ROUND_COUNT; round++) {
-    keccak_theta(state);
-    keccak_rho(state);
-    keccak_pi(state);
-    keccak_chi(state);
-    keccak_iota(state, round);
-  }
+uint64_t ROTL64(uint64_t x, uint64_t y) {
+  return (x << y) | (x >> (64 - y));
 }
 
 void keccak_theta(uint64_t* state) {
@@ -110,8 +80,38 @@ void keccak_iota(uint64_t* state, int round) {
   state[0] ^= keccak_round_constants[round];
 }
 
-uint64_t ROTL64(uint64_t x, uint64_t y) {
-  return (x << y) | (x >> (64 - y));
+void keccak_permutation(uint64_t* state) {
+  // Implement the permutation function f with the 5 steps (theta, rho, pi, chi,
+  // iota)
+  for (int round = 0; round < KECCAK_ROUND_COUNT; round++) {
+    keccak_theta(state);
+    keccak_rho(state);
+    keccak_pi(state);
+    keccak_chi(state);
+    keccak_iota(state, round);
+  }
+}
+
+void keccak_absorb(keccak_context_t* context, const uint8_t* data,
+                   size_t length) {
+  // Implement the absorb phase
+  size_t rate_bytes =
+      KECCAK_BITRATE / 8;  // 136 bytes for a bitrate of 1088 bits
+  size_t i;
+
+  // Process full blocks
+  while (length >= rate_bytes) {
+    for (i = 0; i < rate_bytes; i++) {
+      context->state[i] ^= ((uint64_t*)data)[i];
+    }
+    keccak_permutation(context->state);
+    data += rate_bytes;
+    length -= rate_bytes;
+  }
+
+  // Handle remaining of the data
+  memcpy(context->dataQueue, data, length);
+  context->dataQueueSize = length;
 }
 
 void keccak_padding(keccak_context_t* context) {
@@ -132,6 +132,11 @@ void keccak_padding(keccak_context_t* context) {
 
   // Update the size of the data queue to be exactly the bitrate
   context->dataQueueSize = KECCAK_BITRATE / 8;
+}
+
+void keccak_squeeze(keccak_context_t* context, uint8_t* hash,
+                    size_t hashLength) {
+  // Implement the squeeze phase
 }
 
 unsigned char* keccak_hash(unsigned char* data, size_t length) {
