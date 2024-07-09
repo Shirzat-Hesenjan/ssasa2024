@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 
 #define SHA3_256_DIGEST_SIZE 32
 #define KECCAK_STATE_SIZE 25
