@@ -106,3 +106,6 @@ Note that the reference implementation contains full NIST test vectors, it shoul
 - `sha3.c` <- functions
 - `test.c` <- IO, argv etc. to enable some basic printing the output capability
 - `Makefile` <- build both mine and other's implementation, perform tests and compare the result
+- `run_test.py` <- automate few extra tests (random generated, NIST test vectors)
+
+It works! see [this build](https://github.com/Shirzat-Hesenjan/ssasa2024/actions/runs/9865522573/job/27242615718)
