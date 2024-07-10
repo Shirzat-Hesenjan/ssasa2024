@@ -100,14 +100,14 @@ The main programme should read the input, applying padding, do the Keccak permut
 Citing an existing implementation on [sha3-256](https://github.com/euugenechou/sha3-256) for reference, for test comparisons
 Note that the reference implementation contains full NIST test vectors, it should suffice to test against these vectors to assess the correctness of my implementation.
 
-For randomly generated data for hashes and test against these NIST vectors, I use python and hook the `Makefile` to do tests after successful compilation. Upon all success there should be "OK" printed in the terminal.
+For randomly generated data for hashes and test against these NIST vectors, I use python and its `hashlib.sha3_256` for reference implementation of the hash function and hook the `Makefile` to do tests after successful compilation. Upon all success there should be "OK" printed in the terminal. To reiterate and clarify, the git submodule contains a piece of C implementation and NIST test vectors, however I'm not using or compiling its implementation for the test comparison (I don't like how its tests is written, so I rolled my own in Python), the official python implementation should suffice for reference checks.
 
 ### Skeleton Code in progress (Development Note)
 
 - `sha3.h` <- constants, data structure
 - `sha3.c` <- functions
 - `test.c` <- IO, argv etc. to enable some basic printing the output capability
-- `Makefile` <- build both mine and other's implementation, perform tests and compare the result
+- `Makefile` <- build, perform tests and compare the result (both c tests and python tests)
 - `run_test.py` <- automate few extra tests (random generated, NIST test vectors)
 
 It works! see [this build](https://github.com/Shirzat-Hesenjan/ssasa2024/actions/runs/9865522573/job/27242615718)
